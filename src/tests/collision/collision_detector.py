@@ -9,7 +9,7 @@ from src.hashing.hash import hashing
 def detect_collision(dataframe,column): 
 
     # Generate a smaller set of sequences for easier management
-    num_sequences = 10000000
+    num_sequences = 20_000_000
     sequence_length = 31
     char_codes = cp.array([ord('A'), ord('C'), ord('G'), ord('T')])
 
@@ -29,7 +29,7 @@ def detect_collision(dataframe,column):
     df=hashing(df)
 
     unique_kmers_count    = len(set(df['sequence'].to_numpy()))
-    unique_hash_ids_count = len(set(df['hash_md5'].to_numpy()))
+    unique_hash_ids_count = len(set(df['murmur3'].to_numpy()))
 
     if (unique_kmers_count==unique_hash_ids_count):
         print("No collision occured!")

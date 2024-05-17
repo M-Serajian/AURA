@@ -14,6 +14,6 @@ config = Config.get_instance()
 
 def hashing(df):
 
-    df["hash_md5"]=df.hash_values(method="md5")
+    df["murmur3"]=df.hash_values(method="murmur3")
 
     return(df)
