@@ -31,8 +31,7 @@ def detect_collision(dataframe,column):
     unique_kmers_count    = len(set(df['sequence'].to_numpy()))
     unique_hash_ids_count = len(set(df['murmur3'].to_numpy()))
 
-    print(unique_kmers_count)
-    print(unique_hash_ids_count)
+
     if (unique_kmers_count==unique_hash_ids_count):
         print("No collision occured!")
     
