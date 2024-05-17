@@ -44,7 +44,7 @@ config.set_test(args.test)
 
 # manual libraries after configurarion is complete 
 from src.hashing.hash import hashing
-from src.tests.collision.collision_detector import detect_collision
+from tests.collision.collision_detector import detect_collision
 
 
 
