@@ -55,7 +55,7 @@ def main():
     # Runing tests if flag is 1
     if config.test:
         print("Test mode is activated.")
-        detect_collision(0,1)
+        detect_collision("/home/m.serajian/share/MTB/gerbil_output/csv/k-mer_samples.csv")
 
 
 
