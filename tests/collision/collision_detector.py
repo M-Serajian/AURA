@@ -6,8 +6,13 @@ from src.hashing.hash import hashing
 
 
 
-def detect_collision(dataframe): 
+def detect_collision_test(dataframe): 
 
+    print("Testing collision detection:")
+    print("The input dataframe directory to be tested is: \n")
+    print(dataframe)
+
+    
     df=cudf.read_csv(dataframe)
     df=hashing(df)
     unique_kmers_count    = len(set(df['sequence'].to_numpy()))
@@ -42,6 +47,7 @@ def detect_collision(dataframe):
 
     # df =cudf.DataFrame({'sequence': random_sequences_str})
     
+    print("------------------------------------------")
 
 
     
