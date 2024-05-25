@@ -3,7 +3,7 @@
 #SBATCH --cpus-per-task=4 # request at least 4 cpus per gpu
 #SBATCH --gpus-per-task=1
 #SBATCH --mem=80gb # usually request more that 1G memory. default is 8gb per cpu
-#SBATCH --time=00:10:00
+#SBATCH --time=100:10:00
 #SBATCH --partition=hpg-ai
 #SBATCH --output=rapidsai_test%A_%a.log
 #SBATCH --array=1-1
@@ -16,5 +16,6 @@ module load rapidsai/23.02
 
 
 chmod a+x main.py
-
+date
 ./main.py --test -i ssss
+date

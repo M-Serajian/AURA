@@ -48,7 +48,9 @@ from src.hashing.hash import hashing
 
 # manual libraries after configurarion for testing 
 from tests.collision.collision_detector import detect_collision_test
-from tests.dataframe_merge.dataframe_merge_test import dataframe_merge_test
+from tests.dataframe_merge.dataframe_merge_test import dataframe_merge_custom_squence_test
+from tests.dataframe_merge.dataframe_merge_test import dataframe_merge_CRyPTIC_test
+
 
 
 
@@ -60,9 +62,9 @@ def main():
     if config.test:
         print("Test mode is activated:")
 
-        detect_collision_test("/home/m.serajian/share/MTB/gerbil_output/csv/k-mer_samples.csv")
+        #detect_collision_test("/home/m.serajian/share/MTB/gerbil_output/csv/k-mer_samples.csv")
         
-        dataframe_merge_test()
+        dataframe_merge_CRyPTIC_test()
 
 
 
