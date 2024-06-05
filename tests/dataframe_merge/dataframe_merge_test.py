@@ -66,7 +66,7 @@ def dataframe_merge_CRyPTIC_test(number_of_samples,base,input_list,source_datafr
 
 
     union_dataframe= copy.copy(source_dataframe)
-    refrence_kmers = copy.copy(source_dataframe)
+    #refrence_kmers = copy.copy(source_dataframe)
     
     print("DataFrame shape:", union_dataframe.shape)
 
@@ -109,7 +109,7 @@ def dataframe_merge_CRyPTIC_test(number_of_samples,base,input_list,source_datafr
         mid_dataframe = cudf.read_csv(mid_df_dir)
         
         # Merge dataframes
-        mapped_dataframe = dataframe_kmer_refrence_merge(refrence_kmers, mid_dataframe, parent_directory)
+        mapped_dataframe = dataframe_kmer_refrence_merge(source_dataframe, mid_dataframe, parent_directory)
 
         union_dataframe = cudf.concat([union_dataframe, mapped_dataframe], axis=1)
         print(union_dataframe.memory_usage(deep=True).sum())

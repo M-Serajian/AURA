@@ -19,5 +19,5 @@ module load rapidsai/23.02
 
 chmod a+x main.py
 date
-./main.py --test -i ssss
+./main.py --test -i Not_important_for_now
 date
