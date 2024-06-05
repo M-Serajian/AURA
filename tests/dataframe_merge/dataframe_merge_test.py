@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 import cudf
-from src.dataframe_merge.dataframe_merge import dataframe_merge
+import pandas as pd
+from src.dataframe_merge.dataframe_merge import dataframe_kmer_refrence_merge
 from src.dataframe_merge.dataframe_merge import fill_NA_zero
+from src.dataframe_npy_trasformation.dataframe_npy_trasformation import save_df_as_npy
 import os
 import copy
+import numpy as np
+
 def dataframe_merge_custom_squence_test():
     print("Testing dataframe merge function of CUDF Nvidia:")
     # Example data for df_union
@@ -50,15 +54,25 @@ def dataframe_merge_custom_squence_test():
 
 
 
-def dataframe_merge_CRyPTIC_test():
-    print("Testing dataframe merge function of CUDF Nvidia on 100 genomes of CRyPTIC MTB data:",flush=True)
+def dataframe_merge_CRyPTIC_test(number_of_samples,base,input_list,source_dataframe_dir):
+    print(f"Testing dataframe merge function of CUDF Nvidia on {number_of_samples} genomes of CRyPTIC MTB data:",flush=True)
     # Example data for df_union ( refrence of all the unique kmers accross all the Gerbil outputs)
-    source_dataframe = cudf.read_csv("/home/m.serajian/share/MTB/gerbil_output/csv/1_1285_MTB_genomes.csv")
-    print(source_dataframe.head(100))
+    source_dataframe = cudf.read_csv(source_dataframe_dir)
     source_dataframe = source_dataframe[["K-mer"]]
-    
+    print("Shape of source dataframe:",flush=True)
+    print(source_dataframe.shape,flush=True)
+    print("-------------",flush=True)
+
+
 
     union_dataframe= copy.copy(source_dataframe)
+    refrence_kmers = copy.copy(source_dataframe)
+    
+    print("DataFrame shape:", union_dataframe.shape)
+
+
+
+
     base_directory="/home/m.serajian/share/MTB/gerbil_output/csv/"
     
     
@@ -66,35 +80,84 @@ def dataframe_merge_CRyPTIC_test():
     threshold = 60 * 1024 * 1024 * 1024  
 
     # Read the contents of the text file
-    with open("/home/m.serajian/projects/MTB_Plus_plus_GPU/tests/dataframe_merge/in_file_list.txt", 'r') as file:
-        directories = file.readlines()
+    # with open("/home/m.serajian/projects/MTB_Plus_plus_GPU/tests/dataframe_merge/in_file_list.txt", 'r') as file:
+    #     directories = file.readlines()
+    # directories = [line.strip() for line in directories if line.strip()]
+    # total_lines = len(directories)
+    # Loop through directoriesinput_list
 
-    print("ok!")
 
-    # Loop through directories
-    iteration = 1
+    with open(input_list, 'r') as file:
+        directories = []
+        for i, line in enumerate(file):
+            if i >= number_of_samples:  # Stop reading after the first 100 lines
+                break
+            line = line.strip()
+            if line:  # Only add non-empty lines
+                directories.append(line)
+
+    total_lines = len(directories)
+
+    start_file_id=1
+    end_file_id=0
     for idx, directory in enumerate(directories, start=1):
+        print(f"idx= {idx}",flush=True)
+        end_file_id=idx
         # Extract the parent directory containing "ERR"
         parent_directory = os.path.basename(os.path.dirname(directory))
         mid_df_dir = base_directory + parent_directory + ".csv"
         mid_dataframe = cudf.read_csv(mid_df_dir)
-        print("ok!")
-
+        
         # Merge dataframes
-        union_dataframe = dataframe_merge(union_dataframe, mid_dataframe, parent_directory)
+        mapped_dataframe = dataframe_kmer_refrence_merge(refrence_kmers, mid_dataframe, parent_directory)
 
-        # Check dataframe size every 200 iterations or at the end
-        if idx % 3000 == 0 or idx == len(directories):
-            # Check dataframe size
-            if union_dataframe.memory_usage(deep=True).sum() > threshold:
-                # Save and reset dataframe
-                union_dataframe.to_csv(base_directory+f"final_merge_{iteration}.csv")
-                union_dataframe= copy.copy(source_dataframe)  
-                iteration += 1
-            else:
-                print(f"Iteration {idx}: Dataframe size is within threshold")
-
-        union_dataframe.to_csv(base_directory+f"1_100_{iteration}.csv",index=False)
-    print("------------------------------------------")
+        union_dataframe = cudf.concat([union_dataframe, mapped_dataframe], axis=1)
+        print(union_dataframe.memory_usage(deep=True).sum())
+        if union_dataframe is None:
+            print("Error: The DataFrame 'union_dataframe' is None.")
+        else:
+            print(union_dataframe.shape)
+    # Optionally, add more debug information here to help trace the issue
+        #print(union_dataframe.shape)
+        if union_dataframe.memory_usage(deep=True).sum() > threshold:
     
+            # Save and reset dataframe
+            print("************************************************************",flush=True)
+            print(idx)
+            #union_dataframe_to_be_saved=union_dataframe.to_pandas()
+ 
+
+            if union_dataframe is None:
+                raise ValueError("Error: The DataFrame 'union_dataframe' is None.")
+                # Optionally, add more debug information here to help trace the issue
+            else:
+                full_path_main_data = os.path.join(base, f"{start_file_id}_{end_file_id}.csv")
+                #NVCOMP is every more compresssed
+                union_dataframe.to_csv(full_path_main_data) 
+
+
+            #del(union_dataframe)
+            #union_dataframe_to_be_saved.to_csv(base_directory+f"{start_file_id}_{end_file_id}.csv")
+            union_dataframe= copy.copy(source_dataframe)  
+            start_file_id= end_file_id+1
+            print("next batch being started!")
+    
+    if (start_file_id <= end_file_id): 
+
+        if union_dataframe is None:
+            raise ValueError("Error: The DataFrame 'union_dataframe' is None.")
+            # Optionally, add more debug information here to help trace the issue
+        else:
+            full_path_main_data = os.path.join(base, f"{start_file_id}_{end_file_id}.csv")
+            #NVCOMP is every more compresssed
+            union_dataframe.to_csv(full_path_main_data) 
+
+    print("Finished",flush=True)
+    
+
+
+
+
+
+
 

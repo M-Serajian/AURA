@@ -2,13 +2,18 @@
 import cudf
 
 
-def dataframe_merge(union_dataframe,new_dataframe,name):
+def dataframe_kmer_refrence_merge(refrence_kmer_dataframe,new_dataframe,name):
+    print("Adding:")
+    print(name)
 
     # Merge dataframe with df_union
-    union_dataframe = cudf.merge(union_dataframe, new_dataframe, on='K-mer', how='left')
-    union_dataframe.rename(columns={'Frequency':f'{name}'}, inplace=True)
+    merged_dataframe = cudf.merge(refrence_kmer_dataframe, new_dataframe, on='K-mer', how='left')
+    merged_dataframe.rename(columns={'Frequency':f'{name}'}, inplace=True)
     
-    return(union_dataframe)
+    merged_dataframe.fillna(0,inplace=True)
+
+    return((merged_dataframe[[name]]).astype('int32'))
+
 
 
 def fill_NA_zero(df):
