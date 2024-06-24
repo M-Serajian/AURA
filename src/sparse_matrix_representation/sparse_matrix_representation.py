@@ -145,4 +145,4 @@ def dataframe_merge_CSR(number_of_samples, base, input_list):
 
         t2=time.time()
         print(t2-t1)
-        break
+        
