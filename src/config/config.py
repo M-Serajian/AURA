@@ -1,3 +1,5 @@
+import cudf
+
 class Config:
     _instance = None
 
@@ -16,3 +18,10 @@ class Config:
 
     def set_test(self, test):
         self.test = test
+
+
+    def load_dataframe(self, file_path):
+        # Load a CSV file using cuDF's read_csv function
+        self.source_dataframe = cudf.read_csv(file_path,usecols=["K-mer"])
+        self.source_dataframe = self.source_dataframe.sort_values('K-mer')
+        self.source_dataframe.reset_index(drop=True, inplace=True)

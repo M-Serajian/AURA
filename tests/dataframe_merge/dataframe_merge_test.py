@@ -8,49 +8,49 @@ import os
 import copy
 import numpy as np
 
-def dataframe_merge_custom_squence_test():
-    print("Testing dataframe merge function of CUDF Nvidia:")
-    # Example data for df_union
-    union_data = {'K-mer': ['AAA', 'CCC', 'GGG', 'TTT']}
-    df_union = cudf.DataFrame(union_data)
-    print("This is the main dataframe containing union of all the K-mers of the genomes")
-    print(df_union)
-    # Example data for df1, df2, and df3
+# def dataframe_merge_custom_squence_test():
+#     print("Testing dataframe merge function of CUDF Nvidia:")
+#     # Example data for df_union
+#     union_data = {'K-mer': ['AAA', 'CCC', 'GGG', 'TTT']}
+#     df_union = cudf.DataFrame(union_data)
+#     print("This is the main dataframe containing union of all the K-mers of the genomes")
+#     print(df_union)
+#     # Example data for df1, df2, and df3
     
-    df1_data = {'K-mer': ['AAA', 'CCC', 'ACGT', 'GACT'],
-                'frequency': [10, 20, 30, 40]}
-    df1 = cudf.DataFrame(df1_data)
-    print("This is df1 with frequencies for genome1")
-    print(df1)
+#     df1_data = {'K-mer': ['AAA', 'CCC', 'ACGT', 'GACT'],
+#                 'frequency': [10, 20, 30, 40]}
+#     df1 = cudf.DataFrame(df1_data)
+#     print("This is df1 with frequencies for genome1")
+#     print(df1)
 
-    df2_data = {'K-mer': ['AAA', 'GGG', 'CAGT', 'CCC'],
-                'frequency': [15, 25, 35, 45]}
-    df2 = cudf.DataFrame(df2_data)
-    print("This is df2 with frequencies for genome2")
-    print(df2)
+#     df2_data = {'K-mer': ['AAA', 'GGG', 'CAGT', 'CCC'],
+#                 'frequency': [15, 25, 35, 45]}
+#     df2 = cudf.DataFrame(df2_data)
+#     print("This is df2 with frequencies for genome2")
+#     print(df2)
 
-    df3_data = {'K-mer': ['CCC', 'ACGT', 'GTCA', 'AAA'],
-                'frequency': [18, 28, 38, 48]}
-    df3 = cudf.DataFrame(df3_data)
-    print("This is df3 with frequencies for genome3")
-    print(df3)
+#     df3_data = {'K-mer': ['CCC', 'ACGT', 'GTCA', 'AAA'],
+#                 'frequency': [18, 28, 38, 48]}
+#     df3 = cudf.DataFrame(df3_data)
+#     print("This is df3 with frequencies for genome3")
+#     print(df3)
 
-    # List of dataframes
-    dfs = [df1, df2, df3]
+#     # List of dataframes
+#     dfs = [df1, df2, df3]
 
-    # Check if 'K-mer' column is present in all dataframes
-    k=1
-    for df in dfs:
-        df_union=dataframe_merge(df_union,df,f"df{k} K-mer frequency")
-        k=k+1
+#     # Check if 'K-mer' column is present in all dataframes
+#     k=1
+#     for df in dfs:
+#         df_union=dataframe_merge(df_union,df,f"df{k} K-mer frequency")
+#         k=k+1
 
 
-    # Fill missing frequencies with 0
-    df_union=fill_NA_zero(df_union)
+#     # Fill missing frequencies with 0
+#     df_union=fill_NA_zero(df_union)
 
-    print("The output of the merge dataframe test is")
-    print(df_union)
-    print("------------------------------------------")
+#     print("The output of the merge dataframe test is")
+#     print(df_union)
+#     print("------------------------------------------")
 
 
 
@@ -59,13 +59,17 @@ def dataframe_merge_CRyPTIC_test(number_of_samples,base,input_list,source_datafr
     # Example data for df_union ( refrence of all the unique kmers accross all the Gerbil outputs)
     source_dataframe = cudf.read_csv(source_dataframe_dir)
     source_dataframe = source_dataframe[["K-mer"]]
+    source_dataframe = source_dataframe.sort_values('K-mer')
+    #a unique K-mer index for mapping each new kmer
+    kmer_to_index = cudf.Series(source_dataframe.index, index=source_dataframe['K-mer'])
+
     print("Shape of source dataframe:",flush=True)
     print(source_dataframe.shape,flush=True)
-    print("-------------",flush=True)
+    print("-------------------------------------------",flush=True)
 
 
 
-    union_dataframe= copy.copy(source_dataframe)
+    union_dataframe= (copy.copy(source_dataframe)).T
     #refrence_kmers = copy.copy(source_dataframe)
     
     print("DataFrame shape:", union_dataframe.shape)
@@ -149,12 +153,11 @@ def dataframe_merge_CRyPTIC_test(number_of_samples,base,input_list,source_datafr
             # Optionally, add more debug information here to help trace the issue
         else:
             full_path_main_data = os.path.join(base, f"{start_file_id}_{end_file_id}.csv")
-            #NVCOMP is every more compresssed
+            #NVCOMP is even more compresssed
             union_dataframe.to_csv(full_path_main_data) 
 
     print("Finished",flush=True)
     
-
 
 
 

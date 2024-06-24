@@ -4,7 +4,7 @@
 #SBATCH --gpus-per-task=1
 #SBATCH --mail-type=ALL                 # Mail events (NONE, BEGIN, END, FAIL, ALL)
 #SBATCH --mail-user=m.serajian@ufl.edu  # Where to send mail
-#SBATCH --mem=200gb # usually request more that 1G memory. default is 8gb per cpu
+#SBATCH --mem=30gb # usually request more that 1G memory. default is 8gb per cpu
 #SBATCH --time=100:10:00
 #SBATCH --partition=hpg-ai
 #SBATCH --output=rapidsai_test%A_%a.log
@@ -19,5 +19,5 @@ module load rapidsai/23.02
 
 chmod a+x main.py
 date
-./main.py --test -i Not_important_for_now
+./main.py --test -i /home/m.serajian/share/MTB/gerbil_output/csv/1_1285_MTB_genomes.csv
 date

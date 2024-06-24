@@ -59,22 +59,21 @@ from src.config.config import Config
 
 # Setup argparse
 args = parse_arguments()
+print(args.input)
 
 
 # Set configuration
 config = Config.get_instance()
 config.set_debug(args.debug)
 config.set_test(args.test)
-
-
-
+config.load_dataframe(args.input)
 # manual libraries after configurarion is complete 
 from src.hashing.hash import hashing
 
 
 # manual libraries after configurarion for testing 
 from tests.collision.collision_detector import detect_collision_test
-from tests.dataframe_merge.dataframe_merge_test import dataframe_merge_custom_squence_test
+#from tests.dataframe_merge.dataframe_merge_test import dataframe_merge_custom_squence_test
 from tests.dataframe_merge.dataframe_merge_test import dataframe_merge_CRyPTIC_test
 from src.dataframe_npy_trasformation.dataframe_npy_trasformation import load_npy_CUdf
 
@@ -85,7 +84,7 @@ from src.dataframe_npy_trasformation.dataframe_npy_trasformation import load_npy
 
 
 def main():
-
+    from src.sparse_matrix_representation.sparse_matrix_representation import dataframe_merge_CSR
     # Runing tests if flag is 1
     if config.test:
         print("Test mode:")
@@ -94,7 +93,7 @@ def main():
         base="/home/m.serajian/share/MTB/gerbil_output/csv/"
         source_dataframe_dir="/home/m.serajian/share/MTB/gerbil_output/csv/1_1285_MTB_genomes.csv"
         input_list="/home/m.serajian/projects/MTB_Plus_plus_GPU/tests/dataframe_merge/in_file_list.txt"
-        dataframe_merge_CRyPTIC_test(100,base,input_list,source_dataframe_dir)
+        dataframe_merge_CSR(100,base,input_list)
 
 
 
