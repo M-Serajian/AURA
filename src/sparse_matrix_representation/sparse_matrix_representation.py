@@ -11,6 +11,7 @@ import gc  # Garbage collector interface
 import cupyx
 from src.config.config import Config
 import time
+import sys
 config = Config.get_instance()
 
 
@@ -72,77 +73,263 @@ config = Config.get_instance()
 
 
 
-def dataframe_merge_CSR(number_of_samples, base, input_list):
-
-    def update_csr_matrix(row, kmer_index, frequency, sample_number):
-        if cp.isfinite(frequency):
-            # Directly update the CSR matrix
-            # Note: Accessing and updating a csr_matrix in such a function is not directly possible as
-            # shared memory objects like this aren't supported in `apply_rows`.
-            # We typically need to return values and handle updates outside this function.
-            # This is a limitation we're currently working around conceptually.
-            csr_matrix[sample_number, kmer_index] = frequency
+# def dataframe_merge_CSR(number_of_samples, base, input_list):
 
 
-    print(f"Testing dataframe merge function of CUDF Nvidia on {number_of_samples} genomes of CRyPTIC MTB data:", flush=True)
-    # source_dataframe = source_dataframe.sort_values('K-mer')
+#     print(f"Testing dataframe merge function of CUDF Nvidia on {number_of_samples} genomes of CRyPTIC MTB data:", flush=True)
+#     # source_dataframe = source_dataframe.sort_values('K-mer')
 
-    #source_dataframe = config.source_dataframe
+#     #source_dataframe = config.source_dataframe
 
-    kmer_to_index = cudf.Series(config.source_dataframe.index, index=config.source_dataframe['K-mer'])
-    #source_dataframe['K-mer'] = source_dataframe['K-mer'].map(kmer_to_index)
-    max_index = kmer_to_index.max()
+#     kmer_to_index = cudf.Series(config.source_dataframe.index, index=config.source_dataframe['K-mer'])
+#     #source_dataframe['K-mer'] = source_dataframe['K-mer'].map(kmer_to_index)
+#     max_index = kmer_to_index.max()
 
 
-    num_rows = number_of_samples  # This should match the number of vertical dataframes you expect
-    num_cols = max_index+1   # This should match the number of features in each dataframe
+#     num_rows = number_of_samples  # This should match the number of vertical dataframes you expect
+#     num_cols = max_index+1   # This should match the number of features in each dataframe
 
-    # Create an empty CSR matrix
-    csr_matrix = cupyx.scipy.sparse.csr_matrix((num_rows, num_cols), dtype=cp.float32)
+#     # Create an empty CSR matrix
+#     csr_matrix = cupyx.scipy.sparse.csr_matrix((num_rows, num_cols), dtype=cp.float32)
 
 
 
-    with open(input_list, 'r') as file:
-            directories = []
-            for i, line in enumerate(file):
-                if i >= number_of_samples:  # Stop reading after the first 100 lines
-                    break
-                line = line.strip()
-                if line:  # Only add non-empty lines
-                    directories.append(line)
+#     with open(input_list, 'r') as file:
+#             directories = []
+#             for i, line in enumerate(file):
+#                 if i >= num_rows:  # Stop reading after the first 100 lines
+#                     break
+#                 line = line.strip()
+#                 if line:  # Only add non-empty lines
+#                     directories.append(line)
 
 
-    for sample_number, directory in enumerate(directories, start=0):
-        print(sample_number,flush=True)
-        print(directory,flush=True)
-        # Extract the parent directory containing "ERR"
-        parent_directory = os.path.basename(os.path.dirname(directory))
-        mid_df_dir = base + parent_directory + ".csv"
-        mid_dataframe = cudf.read_csv(mid_df_dir)
-        #print(mid_dataframe.head(29),flush=True)
+
+def dataframe_merge_CSR_parquet(parquet_directories_list_path, source_dataframe_dir):
+
+    #time profiling variables:
+    reading_parquet_files_time=0
+    merging_processing_time=0
+
+    #list of the parquet files gene
+    with open(parquet_directories_list_path, 'r') as file:
+    # Read all lines into a list and strip newline characters
+        parquet_directories = [line.strip() for line in file.readlines() if line.strip()]
+
+    # Dataframe of the all unique kmers filterd accross all the genomes
+    t0=time.time() #start_time
+    source_dataframe = cudf.read_parquet(source_dataframe_dir)
+    reading_parquet_files_time=reading_parquet_files_time+ time.time()- t0
+
+    source_dataframe = source_dataframe[["K-mer"]]
+
+    # CST matrix pointers
+    row_pnt = [0]
+    column_idx =cp.empty(int(0.003*len(source_dataframe)*len(parquet_directories)), dtype=cp.uint32) # 
+    vals = cp.zeros_like(column_idx,dtype=cp.float32)
+    current_position = 0
+
+    for i, directory in enumerate(parquet_directories):
+        df_comp = source_dataframe.reset_index()
+        t0=time.time()
+        df_parquet = cudf.read_parquet(directory)
+        reading_parquet_files_time=reading_parquet_files_time+ (time.time()- t0)
+
+
+        #start time
+        t0=time.time()
+        df_comp = df_comp.merge(df_parquet , on = 'K-mer', how='right') # left is slower (keeps all the k-mers in the source dataframe)
+        df_comp.dropna(inplace=True)
+        idx = df_comp['index'].values.astype(cp.uint32)
+        val = df_comp['Frequency'].values
+        # if not idx.any():
+        #     print('no idx available')
+        size = idx.size
+        column_idx[current_position:current_position + size] = idx
+        vals[current_position:current_position + size] = val
+        current_position+=size
+        row_pnt.append(current_position)
+        merging_processing_time=merging_processing_time+ time.time()-t0
+
+        if (i%10==0):
+            print(i,flush=True)
+            # current_time=time.time()
+            # print(f"Total time for {i+1} genomes in S: {round((current_time-t0),2)}")
+            # total_memory_usage_gb = (sum(sys.getsizeof(item) for item in row_pnt) + sum(sys.getsizeof(item) for item in column_idx) + sum(sys.getsizeof(item) for item in vals) + sys.getsizeof(row_pnt) + sys.getsizeof(column_idx) + sys.getsizeof(vals)) / (1024**3)
+            # print("Total Memory Usage in GB:", total_memory_usage_gb, flush=True)
+    last_value = row_pnt[-1]
+    print(f"Merging time: {merging_processing_time}",flush=True)
+    print(f"Reading time: {reading_parquet_files_time}",flush=True)
+    return cp.asarray(row_pnt),column_idx[:last_value],vals[:last_value]
+
+
+
+
+
+
+def dataframe_merge_CSR_csv(csv_directories_list_path, source_dataframe_dir):
+
+    #time profiling variables:
+    # reading_csv_files_time=0
+    # merging_processing_time=0
+
+    #list of the csv files gene
+    with open(csv_directories_list_path, 'r') as file:
+    # Read all lines into a list and strip newline characters
+        csv_directories = [line.strip() for line in file.readlines() if line.strip()]
+
+    # Dataframe of the all unique kmers filterd accross all the genomes
+    # t0=time.time() #start_time
+    source_dataframe = cudf.read_csv(source_dataframe_dir)
+    # reading_csv_files_time=reading_csv_files_time+ time.time()- t0
+
+    source_dataframe = source_dataframe[["K-mer"]]
+
+    # CST matrix pointers
+    row_pnt = [0]
+    column_idx =cp.empty(int(0.0025*len(source_dataframe)*len(csv_directories)), dtype=cp.uint32) # 
+    vals = cp.zeros_like(column_idx,dtype=cp.float32)
+    current_position = 0
+
+    for i, directory in enumerate(csv_directories):
+        df_comp = source_dataframe.reset_index()
+        # t0=time.time()
+        df_csv = cudf.read_csv(directory)
+        # reading_csv_files_time=reading_csv_files_time+ (time.time()- t0)
+
+
+        #start time
+        # t0=time.time()
+        df_comp = df_comp.merge(df_csv , on = 'K-mer', how='right') # left is slower (keeps all the k-mers in the source dataframe)
+        df_comp.dropna(inplace=True)
+        idx = df_comp['index'].values.astype(cp.uint32)
+        val = df_comp['Frequency'].values
+        # if not idx.any():
+        #     print('no idx available')
+        size = idx.size
+        column_idx[current_position:current_position + size] = idx
+        vals[current_position:current_position + size] = val
+        current_position+=size
+        row_pnt.append(current_position)
+        # merging_processing_time=merging_processing_time+ time.time()-t0
+
+        if (i%1000==0):
+            print(i,flush=True)
+            # current_time=time.time()
+            # print(f"Total time for {i+1} genomes in S: {round((current_time-t0),2)}")
+            # total_memory_usage_gb = (sum(sys.getsizeof(item) for item in row_pnt) + sum(sys.getsizeof(item) for item in column_idx) + sum(sys.getsizeof(item) for item in vals) + sys.getsizeof(row_pnt) + sys.getsizeof(column_idx) + sys.getsizeof(vals)) / (1024**3)
+            # print("Total Memory Usage in GB:", total_memory_usage_gb, flush=True)
+    last_value = row_pnt[-1]
+    # print(f"Merging time: {merging_processing_time}",flush=True)
+    # print(f"Reading time: {reading_csv_files_time}",flush=True)
+    return cp.asarray(row_pnt),column_idx[:last_value],vals[:last_value]
+
+
+
+
+
+def dataframe_merge_CSR_csv_input_list(csv_directories, source_dataframe_dir):
+
+
+    source_dataframe = cudf.read_csv(source_dataframe_dir)
+
+    source_dataframe = source_dataframe[["K-mer"]]
+
+    # CST matrix pointers
+    row_pnt = [0]
+    column_idx =cp.empty(int(0.8*len(source_dataframe)*len(csv_directories)), dtype=cp.uint32) # 
+    vals = cp.zeros_like(column_idx,dtype=cp.float32)
+    current_position = 0
+
+    for i, directory in enumerate(csv_directories):
+        df_comp = source_dataframe.reset_index()
         
-        merged_dataframe = (cudf.merge(config.source_dataframe, mid_dataframe, on='K-mer', how='left'))
-        merged_dataframe = merged_dataframe.dropna(subset=['Frequency'])
-        print(merged_dataframe.shape[0],flush=True)
-        # print(merged_dataframe['Frequency'].count())
-        merged_dataframe['K-mer'] = merged_dataframe['K-mer'].map(kmer_to_index)
+        df_csv = cudf.read_csv(directory)
         
-        #merged_dataframe = merged_dataframe.dropna(subset=['Frequency'])
-        # print(merged_dataframe.head(100),flush=True)
-        # print(merged_dataframe['Frequency'].count())
-        # break
+        print("Number of rows src dataframe:", df_comp.shape[0])
 
-        frequencies = cp.asarray(merged_dataframe['Frequency'].values)
+        print("Number of rows example:", df_csv.shape[0])
 
-        kmer_indices = cp.asarray(cp.asarray(merged_dataframe['K-mer'].values))
-        del merged_dataframe
+        df_comp = df_comp.merge(df_csv , on = 'K-mer', how='right') # left is slower (keeps all the k-mers in the source dataframe)
+        df_comp.dropna(inplace=True)
+        print("Number of rows:", df_comp.shape[0])
+        print("----------")
+        idx = df_comp['index'].values.astype(cp.uint32)
+        val = df_comp['Frequency'].values
+        # if not idx.any():
+        #     print('no idx available')
+        size = idx.size
+        column_idx[current_position:current_position + size] = idx
+        vals[current_position:current_position + size] = val
+        current_position+=size
+        row_pnt.append(current_position)
 
-        # Update the CSR matrix using CuPy (handling non-NaNs and ensuring they are finite)
-        t1=time.time()
-        for kmer_index, frequency in zip(kmer_indices, frequencies):
-            print("ok",flush=True)
-            csr_matrix[sample_number, kmer_index] = frequency
+        if (i%10==0):
+            print(i,flush=True)
 
-        t2=time.time()
-        print(t2-t1)
-        
+
+    last_value = row_pnt[-1]
+    df_comp = source_dataframe.reset_index()
+
+    return cp.asarray(row_pnt),column_idx[:last_value],vals[:last_value]
+
+
+
+
+
+def initial_dataframe_merge_CSR_csv(csv_directories, source_dataframe_dir):
+
+    source_dataframe = cudf.read_csv(source_dataframe_dir)
+    # reading_csv_files_time=reading_csv_files_time+ time.time()- t0
+
+    source_dataframe = source_dataframe[["K-mer"]]
+
+    # CST matrix pointers
+    row_pnt = [0]
+    column_idx =cp.empty(int(0.004*len(source_dataframe)*len(csv_directories)), dtype=cp.uint32) # 
+    vals = cp.zeros_like(column_idx,dtype=cp.float32)
+    current_position = 0
+
+    for i, directory in enumerate(csv_directories):
+        df_comp = source_dataframe.reset_index()
+        # t0=time.time()
+        df_csv = cudf.read_csv(directory)
+        # reading_csv_files_time=reading_csv_files_time+ (time.time()- t0)
+
+        #start time
+        # t0=time.time()
+        df_comp = df_comp.merge(df_csv , on = 'K-mer', how='right') # left is slower (keeps all the k-mers in the source dataframe)
+
+        df_comp.dropna(inplace=True)
+
+        idx = df_comp['index'].values.astype(cp.uint32)
+        val = df_comp['Frequency'].values
+        # if not idx.any():
+        #     print('no idx available')
+        size = idx.size
+        column_idx[current_position:current_position + size] = idx
+        vals[current_position:current_position + size] = val
+        current_position+=size
+        row_pnt.append(current_position)
+        # merging_processing_time=merging_processing_time+ time.time()-t0
+
+        if (i%1000==0):
+            print(i,flush=True)
+            # current_time=time.time()
+            # print(f"Total time for {i+1} genomes in S: {round((current_time-t0),2)}")
+            # total_memory_usage_gb = (sum(sys.getsizeof(item) for item in row_pnt) + sum(sys.getsizeof(item) for item in column_idx) + sum(sys.getsizeof(item) for item in vals) + sys.getsizeof(row_pnt) + sys.getsizeof(column_idx) + sys.getsizeof(vals)) / (1024**3)
+            # print("Total Memory Usage in GB:", total_memory_usage_gb, flush=True)
+    last_value = row_pnt[-1]
+
+
+
+    matrix = cupyx.scipy.sparse.csr_matrix((vals[:last_value],column_idx[:last_value],cp.asarray(row_pnt)))
+    vals_memory = matrix.data.nbytes
+    column_idx_memory = matrix.indices.nbytes
+    row_pnt_memory = matrix.indptr.nbytes
+
+    total_memory = vals_memory + column_idx_memory + row_pnt_memory
+    print(f"Total used memory for csr matrix is: {total_memory}")
+    # print(f"Merging time: {merging_processing_time}",flush=True)
+    # print(f"Reading time: {reading_csv_files_time}",flush=True)
+    return matrix

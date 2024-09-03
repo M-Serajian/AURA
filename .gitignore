@@ -162,7 +162,11 @@ cython_debug/
 
 #directories 
 include/
-
-
+tests/
+data/
+SBWT-kmer-counters/
+build/
 #files
 *.sh
+*.txt
+tests/

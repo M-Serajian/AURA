@@ -4,18 +4,15 @@
 #SBATCH --gpus-per-task=1
 #SBATCH --mail-type=ALL                 # Mail events (NONE, BEGIN, END, FAIL, ALL)
 #SBATCH --mail-user=m.serajian@ufl.edu  # Where to send mail
-#SBATCH --mem=30gb # usually request more that 1G memory. default is 8gb per cpu
-#SBATCH --time=100:10:00
+#SBATCH --mem=10gb # usually request more that 1G memory. default is 8gb per cpu
+#SBATCH --time=10:10:00
 #SBATCH --partition=hpg-ai
 #SBATCH --output=rapidsai_test%A_%a.log
 #SBATCH --array=1-1
 #SBATCH --gres=gpu:1 
 
 
-ml python
-module purge
-module load rapidsai/23.02
-
+ml python;module purge;module load rapidsai/23.02
 
 chmod a+x main.py
 date

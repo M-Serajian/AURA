@@ -1,70 +1,110 @@
+import cupy as cp
+import cudf
+from cupyx.scipy.special import gammainc
+import pandas as pd
+from scipy.stats import chi2_contingency 
+
+# Step 1: Create larger datasets (size 100)
+cp.random.seed(42)  # For reproducibility
+array1 = cp.random.randint(0, 10, size=10000)  # Random non-negative integers
+array2 = cp.random.randint(0, 2, size=10000)   # Random binary values
+
+
+df1 = cudf.DataFrame({'Array1': array1})
+df2 = cudf.DataFrame({'Array2': array2})
+
 
 import cudf
 import cupy as cp
+from scipy.special import gammainc
 
-# Example dataframes
-df_labels = cudf.DataFrame({'id': [1, 2, 3, 4], 'label': ['A', 'B', 'A', 'B']})
-df_observations = cudf.DataFrame({'id': [1, 2, 3, 4], 'observation': ['X', 'X', 'Y', 'Y']})
+def manual_chi2_test_cudf(array1, array2):
+    # Ensure input arrays are cuDF Series
+    array1 = cudf.Series(array1)
+    array2 = cudf.Series(array2)
+    
+    # Create a contingency table using cuDF operations
+    data = cudf.DataFrame({'Array1': array1, 'Array2': array2})
+    contingency_table = data.groupby(['Array1', 'Array2']).size().reset_index(name='counts')
+    contingency_table = contingency_table.pivot(index='Array1', columns='Array2', values='counts').fillna(0)
+    
+    # Calculate the row totals and column totals using cuDF
+    row_totals = contingency_table.sum(axis=1)
+    col_totals = contingency_table.sum(axis=0)
+    total = contingency_table.sum().sum()
 
-# Merge dataframes based on 'id' or appropriate key
-df_merged = cudf.merge(df_labels, df_observations, on='id')
+    # Calculate expected frequencies using cuDF
+    row_totals_cp = row_totals.to_cupy()
+    col_totals_cp = col_totals.to_cupy()
+    expected = cudf.DataFrame(cp.outer(row_totals_cp, col_totals_cp) / total,
+                              index=contingency_table.index, columns=contingency_table.columns)
+    
+    # Calculate the chi-square statistic manually using cuDF
+    observed = contingency_table
+    chi_square_stat = ((observed - expected) ** 2 / expected).sum().sum()
+    
+    # Degrees of freedom
+    dof = (observed.shape[0] - 1) * (observed.shape[1] - 1)
+    
+    # Manual p-value calculation using the chi-square distribution on GPU
+    p_value = 1 - cp.asarray(gammainc(dof / 2.0, chi_square_stat / 2.0)).item()
 
-# Create contingency table
-contingency_table = df_merged.groupby(['label', 'observation']).size().unstack(fill_value=0)
-
-# Convert the contingency table to a CuPy array for calculation
-observed = cp.array(contingency_table.values)
-
-# Compute the expected frequencies
-row_sums = cp.sum(observed, axis=1, keepdims=True)
-col_sums = cp.sum(observed, axis=0, keepdims=True)
-total = cp.sum(observed)
-expected = row_sums * col_sums / total
-
-# Calculate the Chi-squared statistic
-chi_squared_stat = cp.sum((observed - expected) ** 2 / expected)
-
-# Degrees of freedom
-num_rows, num_cols = observed.shape
-degrees_of_freedom = (num_rows - 1) * (num_cols - 1)
-
-# Compute the p-value using the regularized gamma function as an approximation
-p_value = cp.special.gammaincc(degrees_of_freedom / 2, chi_squared_stat / 2)
-print(f"Chi-squared Statistic: {chi_squared_stat}, p-value: {p_value}")
-
-
-
-def benjamini_hochberg(p_values, alpha=0.05):
-    """
-    Perform the Benjamini-Hochberg correction for multiple hypothesis testing on GPU.
-
-    Parameters:
-    p_values (cuPy array): Array of p-values to adjust.
-    alpha (float): Significance level.
-
-    Returns:
-    cp.array: Adjusted p-values.
-    """
-    n = len(p_values)
-    sorted_indices = cp.argsort(p_values)
-    sorted_p_values = p_values[sorted_indices]
-
-    # Calculate the cumulative minimum of the adjusted p-values
-    adjusted_p_values = cp.empty(n, dtype=cp.float64)
-    adjusted_p_values[sorted_indices] = n / (cp.arange(n) + 1) * sorted_p_values / alpha
-
-    # Ensure that the adjusted p-values do not exceed 1
-    adjusted_p_values = cp.minimum(adjusted_p_values, 1)
-
-    return adjusted_p_values
-
-# Example usage
-p_values = cp.array([0.01, 0.04, 0.03, 0.20, 0.02])
-adjusted_p_values = benjamini_hochberg(p_values)
-print("Adjusted P-values:", adjusted_p_values.get())
+    return chi_square_stat, p_value, dof
 
 
+# def manual_chi2_test_cudf(df1, df2):
+#     # Combine the two DataFrames into one
+#     data = cudf.concat([df1, df2], axis=1)
+#     data.columns = ['Array1', 'Array2']
+    
+#     # Create a contingency table using cuDF operations
+#     contingency_table = data.groupby(['Array1', 'Array2']).size().reset_index(name='counts')
+#     contingency_table = contingency_table.pivot(index='Array1', columns='Array2', values='counts').fillna(0)
+    
+#     # Calculate the row totals and column totals using cuDF
+#     row_totals = contingency_table.sum(axis=1)
+#     col_totals = contingency_table.sum(axis=0)
+#     total = contingency_table.sum().sum()
+
+#     # Calculate expected frequencies using CuPy (GPU)
+#     row_totals_cp = row_totals.values
+#     col_totals_cp = col_totals.values
+#     expected = cudf.DataFrame(cp.outer(row_totals_cp, col_totals_cp) / total,
+#                               index=contingency_table.index, columns=contingency_table.columns)
+    
+#     # Calculate the chi-square statistic manually using GPU
+#     observed = contingency_table
+#     chi_square_stat = ((observed - expected) ** 2 / expected).sum().sum()
+    
+#     # Degrees of freedom
+#     dof = (observed.shape[0] - 1) * (observed.shape[1] - 1)
+    
+#     # Manual p-value calculation using the chi-square distribution on GPU
+#     p_value = 1 - gammainc(dof / 2.0, chi_square_stat / 2.0)
+
+#     return chi_square_stat, p_value, dof
 
 
-# Test: scipy.stats vs GPU
+score,p,doff=manual_chi2_test_cudf(array1,array2)
 
+print(score)
+print(p)
+print(doff)
+print("-----------")
+data = cudf.concat([df1, df2], axis=1)
+
+# Group by Array1 and Array2, and then count occurrences
+contingency_table = data.groupby(['Array1', 'Array2']).size().reset_index(name='counts')
+
+# Pivot the table to create a contingency table
+contingency_table = contingency_table.pivot(index='Array1', columns='Array2', values='counts').fillna(0)
+
+# Convert the resulting cuDF DataFrame to a NumPy array for chi2_contingency
+contingency_table_np = contingency_table.to_pandas().values
+
+# Perform the chi-square test for independence using chi2_contingency
+chi2_stat, p_value, dof, expected = chi2_contingency(contingency_table_np)
+
+print(f"Chi-square Statistic: {chi2_stat}")
+print(f"p-value: {p_value}")
+print(f"Degrees of Freedom: {dof}")
