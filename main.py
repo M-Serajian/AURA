@@ -102,39 +102,35 @@ from src.dataframe_npy_trasformation.dataframe_npy_trasformation import load_npy
 
 def manual_chi2_test_cudf(array1, array2):
 
-
-    if (cp.all(array1 == 0) or cp.all(array1 == 1) or cp.all(array2 == 0) or cp.all(array2 == 1)):
-        return 0,0,0
-    else:
-        # Create a contingency table using cuDF operations
-        data = cudf.DataFrame({'Array1': array1, 'Array2': array2})
-        contingency_table = data.groupby(['Array1', 'Array2']).size().reset_index(name='counts')
-        contingency_table = contingency_table.pivot(index='Array1', columns='Array2', values='counts').fillna(0)
-        
-        # Calculate the row totals and column totals using cuDF
-        row_totals = contingency_table.sum(axis=1)
-        col_totals = contingency_table.sum(axis=0)
-        total = contingency_table.sum().sum()
-
-        # Calculate expected frequencies using cuDF
-        row_totals_cp = row_totals.to_cupy()
-        col_totals_cp = col_totals.to_cupy()
-        expected = cudf.DataFrame(cp.outer(row_totals_cp, col_totals_cp) / total,
-                                index=contingency_table.index, columns=contingency_table.columns)
-        
-        # Calculate the chi-square statistic manually using cuDF
-        observed = contingency_table
-        chi_square_stat = ((observed - expected) ** 2 / expected).sum().sum()
-        
-        # Degrees of freedom
-        dof = (observed.shape[0] - 1) * (observed.shape[1] - 1)
-        
-        # Manual p-value calculation using the chi-square distribution on GPU
-        p_value = 1 - cp.asarray(gammainc(dof / 2.0, chi_square_stat / 2.0)).item()
-
-        return chi_square_stat, p_value, dof
+    # Create a contingency table using cuDF operations
+    data = cudf.DataFrame({'Array1': array1, 'Array2': array2})
+    contingency_table = data.groupby(['Array1', 'Array2']).size().reset_index(name='counts')
+    contingency_table = contingency_table.pivot(index='Array1', columns='Array2', values='counts').fillna(0)
     
+    # Calculate the row totals and column totals using cuDF
+    row_totals = contingency_table.sum(axis=1)
+    col_totals = contingency_table.sum(axis=0)
+    total = contingency_table.sum().sum()
+
+    # Calculate expected frequencies using cuDF
+    row_totals_cp = row_totals.to_cupy()
+    col_totals_cp = col_totals.to_cupy()
+    expected = cudf.DataFrame(cp.outer(row_totals_cp, col_totals_cp) / total,
+                            index=contingency_table.index, columns=contingency_table.columns)
     
+    # Calculate the chi-square statistic manually using cuDF
+    observed = contingency_table
+    chi_square_stat = ((observed - expected) ** 2 / expected).sum().sum()
+    
+    # Degrees of freedom
+    dof = (observed.shape[0] - 1) * (observed.shape[1] - 1)
+    
+    # Manual p-value calculation using the chi-square distribution on GPU
+    p_value = 1 - cp.asarray(gammainc(dof / 2.0, chi_square_stat / 2.0)).item()
+
+    return chi_square_stat, p_value, dof
+
+
 def main():
     from src.sparse_matrix_representation.sparse_matrix_representation import dataframe_merge_CSR_parquet
     from src.sparse_matrix_representation.sparse_matrix_representation import dataframe_merge_CSR_csv
