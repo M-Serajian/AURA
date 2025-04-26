@@ -169,4 +169,11 @@ build/
 #files
 *.sh
 *.txt
-tests/
+tests/*
+classification_results/
+tests
+creating_models.py
+creating_final_models/
+logs/
+reports/
+classifier/
