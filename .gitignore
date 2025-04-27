@@ -163,7 +163,6 @@ cython_debug/
 #directories 
 include/
 tests/
-data/
 SBWT-kmer-counters/
 build/
 #files
@@ -177,3 +176,7 @@ creating_final_models/
 logs/
 reports/
 classifier/
+competeing_method_results/
+Phenotypes/
+genome_directories/
+data/

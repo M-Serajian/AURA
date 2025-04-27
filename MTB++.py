@@ -5,6 +5,15 @@ import argparse
 import os
 import sys
 
+# FIRST: fix sys.path BEFORE any project imports
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, ROOT_DIR)
+
+
+from include.GPU_CSR_Kmer.src.run_gerbil import single_genome_kmer_extractor
+
+
+
 # Global data processing libraries — assigned dynamically
 np = None
 pd = None
@@ -54,30 +63,9 @@ def load_processing_libraries(use_gpu: bool):
         sys.exit(1)
 
 
-def validate_paths(input_fasta: str, output_directory: str):
-    """
-    Validate existence of input FASTA file and create output directory if needed.
-
-    Args:
-        input_fasta (str): Path to the input FASTA file.
-        output_directory (str): Directory for storing the output CSV.
-    """
-    if not os.path.isfile(input_fasta):
-        print(f"Error: Input FASTA file not found: {input_fasta}")
-        sys.exit(1)
-    
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
-
 
 def main():
-    """
-    Main execution workflow:
-    - Parses arguments
-    - Validates inputs
-    - Loads appropriate processing libraries
-    - Handles FASTA processing (to be implemented)
-    """
+
     args = parse_command_line_arguments()
 
     if args.gpu:
@@ -85,19 +73,10 @@ def main():
     else:
         print("Running in CPU mode (default).")
 
-    validate_paths(args.fasta, args.output)
     load_processing_libraries(args.gpu)
 
-    # === Placeholder for FASTA processing logic ===
-    print("FASTA processing logic starts here.")
 
-    # Example output
-    output_path = os.path.join(args.output, "output.csv")
-    result_df = pd.DataFrame({"Status": ["Processed Placeholder"]})
-    result_df.to_csv(output_path, index=False)
 
-    print(f"Output written to: {output_path}")
-    print("Execution completed.")
 
 
 if __name__ == "__main__":
