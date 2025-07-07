@@ -1,6 +1,3 @@
-[submodule "include/GPU-CSR-Kmer"]
-	path = include/GPU_CSR_Kmer
-	url = https://github.com/M-Serajian/GPU_CSR_Kmer.git
 [submodule "include/GPU_CSR_Kmer"]
 	path = include/GPU_CSR_Kmer
 	url = https://github.com/M-Serajian/GPU_CSR_Kmer.git
