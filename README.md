@@ -1,32 +1,80 @@
+
 # MTB-SHIELD
 
 ## Introduction
-MTB-SHIELD is a software developed to predict antibiotic resistance in MTB bacteria using machine learning for 13 groups of antibiotics including Amikacin, Bedaquiline, Clofazimine, Delamanid, Ethambutol, Ethionamide, Isoniazid, Kanamycin, Levofloxacin, Linezolid, Moxifloxacin, Rifampicin, Rifabutin. This README contains instructions on how to run the pre-trained classifier or to rebuild the classifier from raw data.
 
+**MTB-SHIELD** is a high-performance software package developed to **predict antibiotic resistance** in *Mycobacterium tuberculosis* (MTB) using machine learning. It supports prediction across **13 antibiotic drug classes**, including:
 
+Amikacin (AMI), Bedaquiline (BDQ), Clofazimine (CFZ), Delamanid (DLM), Ethambutol (EMB), Ethionamide (ETH), Isoniazid (INH), Kanamycin (KAN), Levofloxacin (LEV), Linezolid (LZD), Moxifloxacin (MXF), Rifampicin (RIF), Rifabutin (RFB)
 
+This README provides instructions for two use cases:
+- **Running the pre-trained classifiers** (recommended for most users)
+- **Rebuilding the classifier** from raw sequencing data (for advanced users)
 
-[Rebuilding](https://github.com/M-Serajian/) is an advanced use case.  We expect most users to only run the trained classifier.   This software is maintained by m.Serajian (ma.serajian@gmail.com).  Please post an issue on GitHub if there are any problems with the compilation of the code.
+This project is actively maintained by **M. Serajian**  
+📧 *Contact:* ma.serajian@gmail.com  
+🐛 *Bug reports:* Please open an issue via the [GitHub Issues](https://github.com/M-Serajian/MTB-SHIELD/issues) page.
 
+---
 
+## Installation
 
+MTB-SHIELD can be installed in two ways:
 
+1. **Automatic Installation** — Recommended for systems with `module load` support  
+2. **Manual Installation** — Recommended for custom setups or limited environments
 
-## Citation ##
-This software is under GNU license.  If you use the software please cite the following paper:
+### ✅ Recommended Environment
 
+- **Python**: 3.10  
+- **Conda**: 25.5.1  
 
+---
 
-## Installation ##
-Two methods of installation are considered for MTB++ according to the user's preference. [Automatic Installation](...), and [Manual Installation](...). In case your system supports the "module load" environment, you can use the Automatic Installation, otherwise, Manual Installation is recommended. 
+## Automatic Installation
 
+If your system supports environment modules (e.g., `module load`), run the setup script:
 
-Here is the dependencies required for using the pre-trained models. 
+```bash
+python setup.py install --env resistance-predictor-env
+```
 
+To activate the environment:
+```bash
+conda activate resistance-predictor-env
+```
 
+To deactivate:
+```bash
+conda deactivate
+```
 
-#### Dependencies ####
+To delete the environment:
+```bash
+python setup.py delete
+```
 
-* [python](https://www.python.org/) 3.0+ (3.8+ recommended)
-* [Cmake](https://cmake.org/)(tested on v3.26.4)
-* [GCC](https://gcc.gnu.org/) (12.2 recommended)
+To get help:
+```bash
+python setup.py --help
+```
+
+---
+
+## Manual Installation
+
+If `conda` or `module load` is not available, install the following dependencies manually:
+
+### Required Packages
+
+- `python=3.10`
+- `xgboost=3.0.2`
+- `scikit-learn`
+- `scipy=1.11.4`
+- `numpy`
+- `cupy`
+- `cudf`
+- `pandas`
+- `pyarrow`
+- `pynvml`
+

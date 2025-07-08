@@ -3,21 +3,16 @@ import os
 import sys
 import subprocess
 import platform
-import random
-import string
 import argparse
 from shutil import rmtree
 
-# --- Fix potential environment corruption ---
-for var in ("PYTHONPATH", "PYTHONHOME"):
-    os.environ.pop(var, None)
-
-# --- CLI color codes ---
+# --- CLI Colors ---
 COLORS = {
     "RED": "\033[91m",
     "GREEN": "\033[92m",
     "YELLOW": "\033[93m",
-    "NC": "\033[0m",  # No color
+    "BLUE": "\033[94m",
+    "NC": "\033[0m",
 }
 
 def print_colored(message, color="NC"):
@@ -35,46 +30,46 @@ def run_command(command, shell=False, cwd=None):
         print_colored(e.stderr.decode(), "RED")
         return False
 
-def generate_env_name(prefix="resistance-predictor-env", length=6):
-    return f"{prefix}-{''.join(random.choices(string.ascii_lowercase + string.digits, k=length))}"
+def create_environment():
+    print_colored("[INFO] Creating environment 'resistance-predictor-env'...", "YELLOW")
+    return run_command(["conda", "create", "-n", "resistance-predictor-env", "python=3.10.8", "-y"])
 
-def create_environment(env_name):
-    print_colored(f"[INFO] Creating environment '{env_name}'...", "YELLOW")
-    return run_command(["conda", "create", "-n", env_name, "python=3.10.8", "-y"])
-
-def install_dependencies(env_name):
+def install_dependencies():
     packages = {
-        "xgboost": "3.0.2",  # Latest version as of July 2025
+        "xgboost": "3.0.2",
         "scipy": "1.11.4",
         "gcc_linux-64": "12.2.0",
         "gxx_linux-64": "12.2.0",
         "boost-cpp": "1.77.0",
         "cmake": "3.26.4",
         "git": "2.40.1",
-        "pandas": "",       # latest version
-        "pyarrow": "",      # for reading .parquet
+        "pandas": "",
+        "pyarrow": "",
     }
 
     for package, version in packages.items():
         pkg_str = f"{package}={version}" if version else package
         print_colored(f"[INFO] Installing {pkg_str}...", "YELLOW")
-        run_command(["conda", "install", "-n", env_name, pkg_str, "-c", "conda-forge", "-y"])
+        if not run_command(["conda", "install", "-n", "resistance-predictor-env", pkg_str, "-c", "conda-forge", "-y"]):
+            return False
 
     print_colored("[INFO] Installing pip package: simplejson...", "YELLOW")
-    run_command(["conda", "run", "-n", env_name, "pip", "install", "simplejson"])
+    return run_command(["conda", "run", "-n", "resistance-predictor-env", "pip", "install", "simplejson"])
 
-def setup_and_compile_kmx(env_name):
+def setup_and_compile_kmx():
     base_dir = os.getcwd()
     include_dir = os.path.join(base_dir, "include")
     kmx_dir = os.path.join(include_dir, "KMX")
     gerbil_dir = os.path.join(kmx_dir, "include", "gerbil-DataFrame")
     gerbil_build_dir = os.path.join(gerbil_dir, "build")
 
+    # Clone KMX
     if os.path.exists(kmx_dir):
         print_colored("[INFO] KMX already exists. Skipping clone.", "YELLOW")
     else:
         print_colored("[INFO] Cloning KMX repository...", "YELLOW")
-        run_command(["git", "clone", "https://github.com/M-Serajian/KMX.git", kmx_dir])
+        if not run_command(["git", "clone", "https://github.com/M-Serajian/KMX.git", kmx_dir]):
+            return False
 
     # Clone gerbil-DataFrame
     kmx_include = os.path.join(kmx_dir, "include")
@@ -83,10 +78,11 @@ def setup_and_compile_kmx(env_name):
         print_colored("[INFO] Removing existing gerbil-DataFrame (incomplete or outdated)...", "YELLOW")
         rmtree(gerbil_path)
     print_colored("[INFO] Cloning fresh gerbil-DataFrame into KMX/include...", "YELLOW")
-    run_command(["git", "clone", "https://github.com/M-Serajian/gerbil-DataFrame.git"], cwd=kmx_include)
+    if not run_command(["git", "clone", "https://github.com/M-Serajian/gerbil-DataFrame.git"], cwd=kmx_include):
+        return False
 
-    # Build gerbil-DataFrame using conda paths
-    conda_prefix = os.path.expanduser(f"~/.conda/envs/{env_name}")
+    # Build gerbil-DataFrame
+    conda_prefix = os.path.expanduser("~/.conda/envs/resistance-predictor-env")
     boost_include = os.path.join(conda_prefix, "include")
     boost_lib = os.path.join(conda_prefix, "lib")
 
@@ -94,60 +90,91 @@ def setup_and_compile_kmx(env_name):
     print_colored("[INFO] Building gerbil-DataFrame...", "YELLOW")
 
     cmake_cmd = [
-        "cmake",
-        "..",
+        "cmake", "..",
         f"-DBOOST_ROOT={conda_prefix}",
         f"-DCMAKE_INCLUDE_PATH={boost_include}",
         f"-DCMAKE_LIBRARY_PATH={boost_lib}",
         "-DBoost_NO_SYSTEM_PATHS=ON"
     ]
 
-    cmake_ok = run_command(["conda", "run", "-n", env_name] + cmake_cmd, cwd=gerbil_build_dir)
-    make_ok = run_command(["conda", "run", "-n", env_name, "make", "-j"], cwd=gerbil_build_dir)
+    cmake_ok = run_command(["conda", "run", "-n", "resistance-predictor-env"] + cmake_cmd, cwd=gerbil_build_dir)
+    make_ok = run_command(["conda", "run", "-n", "resistance-predictor-env", "make", "-j"], cwd=gerbil_build_dir)
 
-    if cmake_ok and make_ok:
-        print_colored("[SUCCESS] gerbil-DataFrame built successfully.", "GREEN")
-    else:
-        print_colored("[ERROR] Failed to build gerbil-DataFrame. Check Boost headers and CMakeLists.txt.", "RED")
+    return cmake_ok and make_ok
 
-def delete_environment(env_name):
-    print_colored(f"[INFO] Deleting environment '{env_name}'...", "YELLOW")
-    run_command(["conda", "remove", "--name", env_name, "--all", "-y"])
-
-def parse_arguments():
-    parser = argparse.ArgumentParser(description="Install/delete conda env, dependencies, and compile KMX")
-    subparsers = parser.add_subparsers(dest="command", required=True)
-
-    install_parser = subparsers.add_parser("install", help="Install environment and build KMX")
-    install_parser.add_argument("--env-name", type=str, default=generate_env_name(), help="Name of the conda environment")
-
-    delete_parser = subparsers.add_parser("delete", help="Delete the environment")
-    delete_parser.add_argument("--env-name", type=str, required=True, help="Name of the conda environment to delete")
-
-    return parser.parse_args()
+def delete_environment():
+    print_colored("[INFO] Deleting environment 'resistance-predictor-env'...", "YELLOW")
+    run_command(["conda", "remove", "--name", "resistance-predictor-env", "--all", "-y"])
 
 def main():
-    args = parse_arguments()
-    env_name = args.env_name
-    os.environ["ENV_NAME"] = env_name  # used by subprocesses
+    parser = argparse.ArgumentParser(
+        description="""
+MTB-SHIELD Environment Setup Tool
+----------------------------------
+
+This setup installs all dependencies to run MTB-SHIELD, a GPU-based tool to predict 
+antibiotic resistance in Mycobacterium tuberculosis for 13 antibiotics:
+
+Isoniazid, Rifampicin, Ethambutol, Rifabutin, Ethionamide, Levofloxacin,
+Moxifloxacin, Kanamycin, Amikacin, Clofazimine, Delamanid, Linezolid, Bedaquiline.
+
+Usage:
+------
+Install:
+    python setup.py install
+
+Activate:
+    conda activate resistance-predictor-env
+
+Run MTB-SHIELD:
+    python MTB-SHIELD.py -i <fasta_file> -o <output_csv> -t <temp_dir>
+    (If -t is not provided, './temp' will be used by default)
+
+Deactivate:
+    conda deactivate
+
+Delete environment:
+    python setup.py delete
+""",
+        formatter_class=argparse.RawTextHelpFormatter
+    )
+    parser.add_argument("command", choices=["install", "delete"], help="Install or delete the conda environment")
+    args = parser.parse_args()
+
+    for var in ("PYTHONPATH", "PYTHONHOME"):
+        os.environ.pop(var, None)
 
     if args.command == "install":
-        if not create_environment(env_name):
-            print_colored("[ERROR] Failed to create conda environment.", "RED")
+        if not create_environment():
+            print_colored("[ERROR] Environment creation failed.", "RED")
             sys.exit(1)
 
-        install_dependencies(env_name)
-        setup_and_compile_kmx(env_name)
+        if not install_dependencies():
+            print_colored("[ERROR] Failed to install all dependencies.", "RED")
+            delete_environment()
+            sys.exit(1)
+
+        if not setup_and_compile_kmx():
+            print_colored("[ERROR] Failed to build gerbil-DataFrame.", "RED")
+            rmtree(os.path.join("include", "KMX"), ignore_errors=True)
+            delete_environment()
+            print_colored("[SUGGESTION] Please retry: python setup.py delete", "RED")
+            sys.exit(1)
 
         kmx_src_path = os.path.join(os.getcwd(), "include", "KMX", "src")
-        print_colored(f"\n[SUCCESS] Environment '{env_name}' is ready. Activate it with:", "GREEN")
-        print_colored(f"conda activate {env_name}", "GREEN")
-        print_colored(f"\n[INFO] To use KMX, consider adding the following to your PYTHONPATH:", "YELLOW")
-        print_colored(f"export PYTHONPATH=$PYTHONPATH:{kmx_src_path}\n", "YELLOW")
+        print_colored("\n[SUCCESS] Environment 'resistance-predictor-env' is created successfully!", "BLUE")
+        print_colored("conda activate resistance-predictor-env", "BLUE")
+        print_colored("\nUsage:", "BLUE")
+        print_colored("python MTB-SHIELD.py -i <path_to_fasta> -o <path_to_output_csv> -t <temp_dir>", "BLUE")
+        print_colored("If -t is not provided, './temp' will be used by default.", "BLUE")
+        print_colored("\nTo deactivate the environment:", "BLUE")
+        print_colored("conda deactivate", "BLUE")
+        print_colored("\nTo delete the environment:", "BLUE")
+        print_colored("python setup.py delete", "BLUE")
 
     elif args.command == "delete":
-        delete_environment(env_name)
-        print_colored(f"[SUCCESS] Environment '{env_name}' deleted.", "GREEN")
+        delete_environment()
+        print_colored("[SUCCESS] Environment 'resistance-predictor-env' deleted.", "GREEN")
 
 if __name__ == "__main__":
     main()
