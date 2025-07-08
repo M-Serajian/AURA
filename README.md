@@ -21,19 +21,17 @@ This project is actively maintained by **[M. Serajian](https://github.com/M-Sera
 
 MTB-SHIELD can be installed in two ways:
 
-1. **Automatic Installation** — Recommended for systems with `module load` support  
+1. **Automatic Installation** — using conda (tested on Red Hat Enterprise Linux 9.5 (Plow))
 2. **Manual Installation** — Recommended for custom setups or limited environments
 
-### ✅ Recommended Environment
+### Recommended Environment for conda installation 
 
-- **Python**: 3.10  
-- **Conda**: 25.5.1  
+- **Python**: 3.10  (Tested)
+- **Conda**: 25.5.1 (Tested)
 
 ---
 
-## Automatic Installation
-
-If your system supports environment modules (e.g., `module load`), run the setup script:
+## Installation via Conda
 
 ```bash
 python setup.py install --env resistance-predictor-env
