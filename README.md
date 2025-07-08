@@ -7,9 +7,16 @@
 
 Amikacin (AMI), Bedaquiline (BDQ), Clofazimine (CFZ), Delamanid (DLM), Ethambutol (EMB), Ethionamide (ETH), Isoniazid (INH), Kanamycin (KAN), Levofloxacin (LEV), Linezolid (LZD), Moxifloxacin (MXF), Rifampicin (RIF), Rifabutin (RFB)
 
-This README provides instructions for two use cases:
-- **Running the pre-trained classifiers** (recommended for most users)
-- **Rebuilding the classifier** from raw sequencing data (for advanced users)
+## Use Cases
+
+This README outlines two primary use cases:
+
+- **Running the pre-trained classifiers** (recommended for most users):  
+  The `MTB-SHIELD.py` script is designed for this purpose. It provides a lightweight interface that requires no GPU resources and can be executed using a single CPU core. The script supports parallel execution, making it suitable for large-scale antibiotic resistance studies.
+
+- **Rebuilding the classifiers from raw sequencing data** (intended for advanced users):  
+  This workflow enables researchers to develop custom AI-based models and software in a *de novo* fashion. It offers a robust foundation for exploring novel approaches to antimicrobial resistance prediction.
+
 
 This project is actively maintained by **[M. Serajian](https://github.com/M-Serajian/)**  
 📧 *Contact:* ma.serajian@gmail.com  
@@ -33,23 +40,17 @@ MTB-SHIELD can be installed in two ways:
 
 ## Installation via Conda
 
+To install and activate the environment:
 ```bash
 python setup.py install --env resistance-predictor-env
-```
-
-To activate the environment:
-```bash
 conda activate resistance-predictor-env
 ```
 
-To deactivate:
+To deactivate and delete environment:
 ```bash
 conda deactivate
-```
-
-To delete the environment:
-```bash
 python setup.py delete
+
 ```
 
 To get help:
@@ -57,13 +58,14 @@ To get help:
 python setup.py --help
 ```
 
+
 ---
 
 ## Manual Installation
 
-If `conda` or `module load` is not available, install the following dependencies manually:
+If `conda` is not available, install the following dependencies manually:
 
-### Required Packages
+### Dependencies
 
 - `python=3.10`
 - `xgboost=3.0.2`
@@ -73,4 +75,5 @@ If `conda` or `module load` is not available, install the following dependencies
 - `pandas`
 - `pyarrow`
 - `pynvml`
+
 
