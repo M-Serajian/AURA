@@ -106,7 +106,6 @@ Tested and recommended versions are indicated in parentheses.
 - `pynvml`
 
 #### 🧰 System Libraries (required during build and runtime):
-- `git`
 - `libboost-all-dev`
 - `libz3-dev`
 - `libbz2-dev`
@@ -126,8 +125,12 @@ make -j
 cd ../../../../../
 ```
 
----
----
+<table width="100%">
+  <tr>
+    <td><hr></td>
+    <td><hr></td>
+  </tr>
+</table>
 
 
 ## 🧬 Usage
@@ -141,7 +144,7 @@ python MTB-SHIELD.py -i /path/to/input.fasta -o /path/to/output.csv -t /path/to/
 ### 🔍 Arguments
 
 - `-i`: Path to the input FASTA file (required)
-- `-o`: Path to the output CSV file (optional; default: `prediction.csv`)
+- `-o`: Path to the output CSV file (required)
 - `-t`: Temporary working directory (optional; default: `temp/`)
 
 ### 💡 Example
