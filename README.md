@@ -11,10 +11,10 @@ Amikacin (AMI), Bedaquiline (BDQ), Clofazimine (CFZ), Delamanid (DLM), Ethambuto
 
 This README outlines two primary use cases:
 
-- **Running the pre-trained classifiers** (recommended for most users):  
+- **1. Running the pre-trained classifiers** (recommended for most users):  
   The `MTB-SHIELD.py` script is designed for this purpose. It provides a lightweight interface that requires no GPU resources and can be executed using a single CPU core. The script supports parallel execution, making it suitable for large-scale antibiotic resistance studies.
 
-- **Rebuilding the classifiers from raw sequencing data** (intended for advanced users):  
+- **2. Rebuilding the classifiers from raw sequencing data** (intended for advanced users):  
   This workflow enables researchers to develop custom AI-based models and software in a *de novo* fashion. It offers a robust foundation for exploring novel approaches to antimicrobial resistance prediction.
 
 
@@ -23,24 +23,26 @@ This project is actively maintained by **[M. Serajian](https://github.com/M-Sera
 🐛 *Bug reports:* Please open an issue via the [GitHub Issues](https://github.com/M-Serajian/MTB-SHIELD/issues) page.
 
 ---
-## 🚀 Installation Guide
+## 1. Running the Pre-trained Classifiers
+
+### 🚀 Installation Guide
 
 MTB-SHIELD can be installed in two ways:
 
 1. **Automatic Installation** *(recommended for most users)* — using Conda (tested on **Red Hat Enterprise Linux 9.5 (Plow)**)
 2. **Manual Installation** — for custom setups, advanced users, or restricted environments
 
----
+***
 
-## 📦 Option 1: Automatic Installation via Conda (Recommended)
+### 📦 Option 1: Automatic Installation via Conda (Recommended)
 
-### ✅ Tested Environment
+#### ✅ Tested Environment
 
 - **Operating System**: Red Hat Enterprise Linux 9.5 (Plow)
 - **Python**: 3.10.x
 - **Conda**: 25.5.1
 
-### 🔧 Installation Steps
+#### 🔧 Installation Steps
 
 1. Clone the repository:
 
@@ -63,9 +65,9 @@ MTB-SHIELD can be installed in two ways:
 
 4. Run the classifier (see [Usage](#-usage))
 
----
+***
 
-### 🧹 Deactivation & Cleanup
+#### 🧹 Deactivation & Cleanup
 
 To deactivate the environment:
 
@@ -79,39 +81,38 @@ To delete the environment:
 python setup.py delete
 ```
 
----
+***
 
 ## 🔧 Option 2: Manual Installation
 
 Manual installation is recommended for advanced users who need full control over dependencies or are working in restricted environments.
 
-### 📦 Dependencies
+#### 📦 Dependencies
 
 The following packages and libraries are **required** to install and run pretrained **MTB-SHIELD** cllasifiers.  
 Tested and recommended versions are indicated in parentheses.
 
-#### 🔧 Core Build Dependencies:
+##### 🔧 Core Build Dependencies:
 - `cmake` (tested: **3.30.5**)
 - `gcc` (tested: **12.2**)  
   ⚠️ *Note: GCC 14 is **not recommended** due to incompatibility with `gerbil`.*
 - `boost` (tested: **1.77**)
 
-#### 🐍 Python Environment:
+##### 🐍 Python Environment:
 - `python=` (tested: **3.10**)
 - `xgboost` (tested: **3.0.2**)
 - `scipy` (tested: **1.11.4**)
 - `numpy`
 - `pandas`
 - `pyarrow`
-- `pynvml`
 
-#### 🧰 System Libraries (required during build and runtime):
+##### 🧰 System Libraries (required during build and runtime):
 - `libboost-all-dev`
 - `libz3-dev`
 - `libbz2-dev`
 
 
-### 🛠️ Build Instructions
+#### 🛠️ Build Instructions
 
 ```bash
 git clone https://github.com/M-Serajian/MTB-SHIELD.git
@@ -125,12 +126,8 @@ make -j
 cd ../../../../../
 ```
 
-<table width="100%">
-  <tr>
-    <td><hr></td>
-    <td><hr></td>
-  </tr>
-</table>
+
+***
 
 
 ## 🧬 Usage
@@ -156,3 +153,56 @@ python MTB-SHIELD.py -i data/example_data/sample.fasta -o results/prediction.csv
 The resistance profiling output will be saved in the specified output file.
 
 ---
+
+
+
+## 2. Rebuilding the Classifiers from Raw Sequencing Data
+
+This workflow enables researchers to develop custom AI-based models and software in a *de novo* fashion. It offers a robust GPU-acelerated algorithm for exploring novel approaches to antimicrobial resistance prediction.
+
+
+## 🔧 Option 2: Manual Installation
+
+Manual installation is recommended for advanced users who need full control over dependencies or are working in restricted environments.
+
+#### 📦 Dependencies
+
+The following packages and libraries are **required** to install and run pretrained **MTB-SHIELD** cllasifiers.  
+Tested and recommended versions are indicated in parentheses.
+
+##### 🔧 Core Build Dependencies:
+- `cmake` (tested: **3.30.5**)
+- `gcc` (tested: **12.2**)  
+  ⚠️ *Note: GCC 14 is **not recommended** due to incompatibility with `gerbil`.*
+- `boost` (tested: **1.77**)
+
+##### 🐍 Python Environment:
+- `python=` (tested: **3.10**)
+- `xgboost` (tested: **3.0.2**)
+- `scipy` (tested: **1.11.4**)
+- `numpy`
+- `pandas`
+- `pyarrow`
+- `pynvml`
+- [`rapidsai`](https://rapids.ai/) (tested: **rapidsai/24.08**)
+
+
+##### 🧰 System Libraries (required during build and runtime):
+- `libboost-all-dev`
+- `libz3-dev`
+- `libbz2-dev`
+
+
+#### 🛠️ Build Instructions
+
+```bash
+git clone https://github.com/M-Serajian/MTB-SHIELD.git
+cd MTB-SHIELD
+git submodule update --init --recursive
+
+cd include/KMX/include/gerbil-DataFrame/build
+cmake ..
+make -j
+
+cd ../../../../../
+```
