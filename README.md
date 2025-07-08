@@ -11,7 +11,7 @@ This README provides instructions for two use cases:
 - **Running the pre-trained classifiers** (recommended for most users)
 - **Rebuilding the classifier** from raw sequencing data (for advanced users)
 
-This project is actively maintained by **M. Serajian**  
+This project is actively maintained by **[M. Serajian](https://github.com/M-Serajian/)**  
 📧 *Contact:* ma.serajian@gmail.com  
 🐛 *Bug reports:* Please open an issue via the [GitHub Issues](https://github.com/M-Serajian/MTB-SHIELD/issues) page.
 
