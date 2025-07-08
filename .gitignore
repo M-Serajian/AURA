@@ -179,8 +179,12 @@ classifier/
 competeing_method_results/
 Phenotypes/
 genome_directories/
-data/
+
 results/
 
 temp/*
 !temp/.keep
+
+
+/data/*
+!/data/trained_models/
