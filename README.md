@@ -23,57 +23,133 @@ This project is actively maintained by **[M. Serajian](https://github.com/M-Sera
 🐛 *Bug reports:* Please open an issue via the [GitHub Issues](https://github.com/M-Serajian/MTB-SHIELD/issues) page.
 
 ---
-
-## Installation
+## 🚀 Installation Guide
 
 MTB-SHIELD can be installed in two ways:
 
-1. **Automatic Installation** — using conda (tested on Red Hat Enterprise Linux 9.5 (Plow))
-2. **Manual Installation** — Recommended for custom setups or limited environments
-
-### Recommended Environment for conda installation 
-
-- **Python**: 3.10  (Tested)
-- **Conda**: 25.5.1 (Tested)
+1. **Automatic Installation** *(recommended for most users)* — using Conda (tested on **Red Hat Enterprise Linux 9.5 (Plow)**)
+2. **Manual Installation** — for custom setups, advanced users, or restricted environments
 
 ---
 
-## Installation via Conda
+## 📦 Option 1: Automatic Installation via Conda (Recommended)
 
-To install and activate the environment:
-```bash
-python setup.py install --env resistance-predictor-env
-conda activate resistance-predictor-env
-```
+### ✅ Tested Environment
 
-To deactivate and delete environment:
+- **Operating System**: Red Hat Enterprise Linux 9.5 (Plow)
+- **Python**: 3.10.x
+- **Conda**: 25.5.1
+
+### 🔧 Installation Steps
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/M-Serajian/MTB-SHIELD.git
+   cd MTB-SHIELD
+   ```
+
+2. Install the environment and required dependencies:
+
+   ```bash
+   python setup.py install --env resistance-predictor-env
+   ```
+
+3. Activate the environment:
+
+   ```bash
+   conda activate resistance-predictor-env
+   ```
+
+4. Run the classifier (see [Usage](#-usage))
+
+---
+
+### 🧹 Deactivation & Cleanup
+
+To deactivate the environment:
+
 ```bash
 conda deactivate
-python setup.py delete
-
 ```
 
-To get help:
+To delete the environment:
+
 ```bash
-python setup.py --help
+python setup.py delete
 ```
-
 
 ---
 
-## Manual Installation
+## 🔧 Option 2: Manual Installation
 
-If `conda` is not available, install the following dependencies manually:
+Manual installation is recommended for advanced users who need full control over dependencies or are working in restricted environments.
 
-### Dependencies
+### 📦 Dependencies
 
-- `python=3.10`
-- `xgboost=3.0.2`
-- `scikit-learn`
-- `scipy=1.11.4`
+The following packages and libraries are **required** to install and run pretrained **MTB-SHIELD** cllasifiers.  
+Tested and recommended versions are indicated in parentheses.
+
+#### 🔧 Core Build Dependencies:
+- `cmake` (tested: **3.30.5**)
+- `gcc` (tested: **12.2**)  
+  ⚠️ *Note: GCC 14 is **not recommended** due to incompatibility with `gerbil`.*
+- `boost` (tested: **1.77**)
+
+#### 🐍 Python Environment:
+- `python=` (tested: **3.10**)
+- `xgboost` (tested: **3.0.2**)
+- `scipy` (tested: **1.11.4**)
 - `numpy`
 - `pandas`
 - `pyarrow`
 - `pynvml`
 
+#### 🧰 System Libraries (required during build and runtime):
+- `git`
+- `libboost-all-dev`
+- `libz3-dev`
+- `libbz2-dev`
 
+
+### 🛠️ Build Instructions
+
+```bash
+git clone https://github.com/M-Serajian/MTB-SHIELD.git
+cd MTB-SHIELD
+git submodule update --init --recursive
+
+cd include/KMX/include/gerbil-DataFrame/build
+cmake ..
+make -j
+
+cd ../../../../../
+```
+
+---
+---
+
+
+## 🧬 Usage
+
+Once installed and built, run MTB-SHIELD classifiers using:
+
+```bash
+python MTB-SHIELD.py -i /path/to/input.fasta -o /path/to/output.csv -t /path/to/temp_directory
+```
+
+### 🔍 Arguments
+
+- `-i`: Path to the input FASTA file (required)
+- `-o`: Path to the output CSV file (optional; default: `prediction.csv`)
+- `-t`: Temporary working directory (optional; default: `temp/`)
+
+### 💡 Example
+
+```bash
+python MTB-SHIELD.py -i data/example_data/sample.fasta -o results/prediction.csv 
+```
+
+The resistance profiling output will be saved in the specified output file.
+
+---
