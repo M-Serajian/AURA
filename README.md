@@ -70,8 +70,6 @@ If `conda` or `module load` is not available, install the following dependencies
 - `scikit-learn`
 - `scipy=1.11.4`
 - `numpy`
-- `cupy`
-- `cudf`
 - `pandas`
 - `pyarrow`
 - `pynvml`

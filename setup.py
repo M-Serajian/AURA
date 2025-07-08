@@ -107,6 +107,19 @@ def delete_environment():
     run_command(["conda", "remove", "--name", "resistance-predictor-env", "--all", "-y"])
 
 def main():
+    os_type = platform.system()
+    os_version = platform.version() if os_type == "Linux" else platform.mac_ver()[0]
+
+    if os_type == "Linux":
+        print_colored(f"[INFO] Detected Linux - Kernel version: {os_version}", "BLUE")
+    elif os_type == "Darwin":
+        print_colored(f"[INFO] Detected macOS - Version: {os_version}", "YELLOW")
+        print_colored("[WARNING] macOS is not supported yet for MTB-SHIELD setup. Exiting...", "RED")
+        sys.exit(0)
+    else:
+        print_colored(f"[WARNING] Unsupported OS detected: {os_type}. Exiting...", "RED")
+        sys.exit(0)
+
     parser = argparse.ArgumentParser(
         description="""
 MTB-SHIELD Environment Setup Tool
@@ -161,7 +174,6 @@ Delete environment:
             print_colored("[SUGGESTION] Please retry: python setup.py delete", "RED")
             sys.exit(1)
 
-        kmx_src_path = os.path.join(os.getcwd(), "include", "KMX", "src")
         print_colored("\n[SUCCESS] Environment 'resistance-predictor-env' is created successfully!", "BLUE")
         print_colored("conda activate resistance-predictor-env", "BLUE")
         print_colored("\nUsage:", "BLUE")
