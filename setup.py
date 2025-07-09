@@ -35,22 +35,21 @@ def create_environment():
     return run_command(["conda", "create", "-n", "resistance-predictor-env", "python=3.10.8", "-y"])
 
 def install_dependencies():
-    packages = {
-        "xgboost": "3.0.2",
-        "scipy": "1.11.4",
-        "gcc_linux-64": "12.2.0",
-        "gxx_linux-64": "12.2.0",
-        "boost-cpp": "1.77.0",
-        "cmake": "3.26.4",
-        "pandas": "",
-        "pyarrow": "",
-    }
+    print_colored("[INFO] Installing all dependencies together...", "YELLOW")
+    packages = [
+        "xgboost=3.0.2",
+        "scipy=1.11.4",
+        "gcc_linux-64=12.2.0",
+        "gxx_linux-64=12.2.0",
+        "boost-cpp=1.77.0",
+        "cmake=3.26.4",
+        "pandas",
+        "pyarrow",
+    ]
 
-    for package, version in packages.items():
-        pkg_str = f"{package}={version}" if version else package
-        print_colored(f"[INFO] Installing {pkg_str}...", "YELLOW")
-        if not run_command(["conda", "install", "-n", "resistance-predictor-env", pkg_str, "-c", "conda-forge", "-y"]):
-            return False
+    command = ["conda", "install", "-n", "resistance-predictor-env", "-c", "conda-forge", "-y"] + packages
+    if not run_command(command):
+        return False
 
     print_colored("[INFO] Installing pip package: simplejson...", "YELLOW")
     return run_command(["conda", "run", "-n", "resistance-predictor-env", "pip", "install", "simplejson"])
