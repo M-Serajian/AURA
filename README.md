@@ -87,7 +87,7 @@ python setup.py delete
 
 Manual installation is recommended for advanced users who need full control over dependencies or are working in restricted environments.
 
-#### 📦 Dependencies
+### 📦 Dependencies
 
 The following packages and libraries are **required** to install and run pretrained **MTB-SHIELD** cllasifiers.  
 Tested and recommended versions are indicated in parentheses.
@@ -158,10 +158,10 @@ The resistance profiling output will be saved in the specified output file.
 
 ## 2. Rebuilding the Classifiers from Raw Sequencing Data
 
-This workflow enables researchers to develop custom AI-based models and software in a *de novo* fashion. It offers a robust GPU-acelerated algorithm for exploring novel approaches to antimicrobial resistance prediction.
+This workflow enables researchers to develop custom AI-based models and software in a *de novo* fashion. It offers a robust GPU-acelerated algorithm for exploring novel approaches to antimicrobial resistance prediction. For this section, GPU is requred with at least 16GB of VRAM depending on 
 
 
-## 🔧 Option 2: Manual Installation
+## 🔧 Manual Installation
 
 Manual installation is recommended for advanced users who need full control over dependencies or are working in restricted environments.
 
@@ -183,17 +183,23 @@ Tested and recommended versions are indicated in parentheses.
 - `numpy`
 - `pandas`
 - `pyarrow`
-- `pynvml`
-- [`rapidsai`](https://rapids.ai/) (tested: **rapidsai/24.08**)
+- `pynvml` (tested: **11.4.1**)
 
+##### ⚙️ GPU Libraries:
+- [`RAPIDS AI`](https://rapids.ai/) (tested: **24.08**), including:
+  - `cuML` (tested: **24.08.00**)
+  - `cuDF` (tested: **24.08.03**)
+  - `cupy` (tested: **13.3.0**)
+  - `cupyx` (uses `cupy`: **13.3.0**)
 
 ##### 🧰 System Libraries (required during build and runtime):
 - `libboost-all-dev`
 - `libz3-dev`
 - `libbz2-dev`
 
-
 #### 🛠️ Build Instructions
+
+
 
 ```bash
 git clone https://github.com/M-Serajian/MTB-SHIELD.git

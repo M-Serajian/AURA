@@ -42,7 +42,6 @@ def install_dependencies():
         "gxx_linux-64": "12.2.0",
         "boost-cpp": "1.77.0",
         "cmake": "3.26.4",
-        "git": "2.40.1",
         "pandas": "",
         "pyarrow": "",
     }
